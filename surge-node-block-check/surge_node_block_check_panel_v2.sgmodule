@@ -1,9 +1,9 @@
-#!name=节点阻断检测面板 V2
-#!desc=在 Surge 策略组页面显示 Proxy 当前所选节点的可用性、出口 IP、延迟和阻断诊断。若旧版未显示，请安装此 V2。
+#!name=节点检测面板
+#!desc=精简显示 Proxy 当前节点、出口 IP、地区网络、延迟和可用状态。
 #!system=ios
 
 [Panel]
-NodeBlockPanelV2 = title="节点阻断检测",content="模块已成功加载\n点击右侧刷新按钮检测 Proxy 当前节点",style=info,script-name=NodeBlockPanelScriptV2,update-interval=1
+NodeBlockPanelV2 = title="节点检测",content="点击右侧刷新按钮检测 Proxy 当前节点",style=info,script-name=NodeBlockPanelScriptV2,update-interval=300
 
 [Script]
-NodeBlockPanelScriptV2 = type=generic,script-path=https://raw.githubusercontent.com/xytxg/test111/main/surge-node-block-check/surge_node_block_check.js?v=2,argument=Proxy,timeout=35,script-update-interval=3600
+NodeBlockPanelScriptV2 = type=generic,script-path=https://raw.githubusercontent.com/xytxg/test111/main/surge-node-block-check/surge_node_block_check_panel_v3.js,argument=Proxy,timeout=15,script-update-interval=3600
