@@ -1,14 +1,14 @@
 /**
- * Surge 节点阻断检测
+ * Surge 节点阻断检测（信息面板版）
  *
- * 配置：
- * 节点阻断检测 = type=generic,script-path=<RAW_URL>,argument=节点选择,timeout=35
- *
- * argument 可填写策略组名称，也可直接填写具体节点名称。
+ * 支持：
+ * 1. 作为 [Panel] 动态信息面板显示检测结果；
+ * 2. 在脚本列表手动运行时发送通知；
+ * 3. argument 可填写策略组名称，也可填写具体节点名称。
  */
 
 const CFG = {
-  defaultTarget: "节点选择",
+  defaultTarget: "Proxy",
   ipApi: "https://api64.ipify.org?format=json",
   checkHost: "https://check-host.net",
   requestTimeout: 8,
@@ -20,18 +20,19 @@ const CFG = {
 
 let finished = false;
 
-(async () => {
+(async function main() {
+  const panelMode = isPanelRun();
   const target = getArgument() || CFG.defaultTarget;
-  if (!target) throw new Error("请在脚本配置中添加 argument=策略组名称");
+  if (!target) throw new Error("请在模块参数中填写策略组名称");
 
   const resolved = await resolvePolicy(target);
   const policy = resolved.policy;
-  const detailRes = await surgeAPI(
+
+  const detailResult = await surgeAPI(
     "GET",
     `/v1/policies/detail?policy_name=${encodeURIComponent(policy)}`
   );
-
-  const detail = detailRes.ok ? detailRes.data : null;
+  const detail = detailResult.ok ? detailResult.data : null;
   const endpoint = findEndpoint(detail);
   const protocol = findProtocol(detail);
   const udpLike = /(hysteria|tuic|wireguard|quic|udp)/i.test(protocol || "");
@@ -54,32 +55,29 @@ let finished = false;
   const direct = results[1];
   const remote = results[2];
   const conclusion = diagnose(node, direct, remote);
+  const displayName = policy || target;
+  const report = buildReport({
+    target,
+    displayName,
+    resolved,
+    protocol,
+    endpoint,
+    node,
+    direct,
+    remote,
+    conclusion,
+  });
 
-  const lines = [];
-  lines.push(`策略：${resolved.chain.join(" → ")}`);
-  if (protocol) lines.push(`协议：${protocol}`);
-  if (endpoint) lines.push(`入口：${hostPort(endpoint.host, endpoint.port)}`);
-  lines.push("");
-  lines.push(formatExit("节点代理", node));
-  lines.push(formatExit("本机直连", direct));
-
-  if (remote.known) {
-    lines.push(
-      `远端 TCP：${remote.ok ? "✅ 可达" : "❌ 不可达"}（${remote.success}/${remote.total}）`
-    );
-  } else {
-    lines.push(`远端 TCP：⚪ 未确认（${remote.reason || "无有效结果"}）`);
+  if (panelMode) {
+    finish({
+      title: `${conclusion.panelPrefix} ${displayName}`,
+      content: report.panelContent,
+      icon: conclusion.icon,
+      "icon-color": conclusion.color,
+    });
+    return;
   }
 
-  if (remote.items && remote.items.length) {
-    lines.push(remote.items.map(formatRemoteItem).join("  "));
-  }
-
-  lines.push("");
-  lines.push(`结论：${conclusion.title}`);
-  if (conclusion.note) lines.push(`提示：${conclusion.note}`);
-
-  const body = lines.join("\n");
   const options = remote.url
     ? { action: "open-url", url: remote.url, sound: false }
     : undefined;
@@ -87,32 +85,61 @@ let finished = false;
   $notification.post(
     "节点阻断检测",
     target === policy ? policy : `${target} → ${policy}`,
-    body,
+    report.fullContent,
     options
   );
-  console.log(`[节点阻断检测]\n${body}`);
-})()
-  .catch((error) => {
-    const message = errorText(error) || "未知错误";
-    $notification.post("节点阻断检测", "执行失败", message);
-    console.log(`[节点阻断检测] ${message}`);
-  })
-  .finally(done);
+  console.log(`[节点阻断检测]\n${report.fullContent}`);
+  finish();
+})().catch(function onError(error) {
+  const message = errorText(error) || "未知错误";
+  if (isPanelRun()) {
+    finish({
+      title: "节点阻断检测失败",
+      content: `${message}\n点击右侧刷新按钮重试`,
+      icon: "exclamationmark.triangle.fill",
+      "icon-color": "#FF3B30",
+    });
+    return;
+  }
+
+  $notification.post("节点阻断检测", "执行失败", message);
+  console.log(`[节点阻断检测] ${message}`);
+  finish();
+});
+
+function isPanelRun() {
+  try {
+    return (
+      typeof $input !== "undefined" &&
+      $input &&
+      String($input.purpose || "") === "panel"
+    );
+  } catch (_) {
+    return false;
+  }
+}
 
 function getArgument() {
   try {
     if (typeof $intent !== "undefined" && $intent && $intent.parameter) {
-      return String($intent.parameter).trim();
+      return normalizeArgument($intent.parameter);
     }
   } catch (_) {}
 
   try {
     if (typeof $argument !== "undefined" && $argument != null) {
-      return String($argument).trim();
+      return normalizeArgument($argument);
     }
   } catch (_) {}
 
   return "";
+}
+
+function normalizeArgument(value) {
+  const text = String(value == null ? "" : value).trim();
+  if (!text) return "";
+  const match = text.match(/(?:^|[,&;])\s*(?:GROUP|group)\s*=\s*([^,&;]+)/);
+  return (match ? match[1] : text).trim();
 }
 
 async function resolvePolicy(name) {
@@ -121,16 +148,18 @@ async function resolvePolicy(name) {
 
   for (let i = 0; i < CFG.maxDepth; i += 1) {
     chain.push(current);
-    const res = await surgeAPI(
+    const result = await surgeAPI(
       "GET",
       `/v1/policy_groups/select?group_name=${encodeURIComponent(current)}`
     );
     const selected =
-      res.ok && res.data && typeof res.data.policy === "string"
-        ? res.data.policy.trim()
+      result.ok &&
+      result.data &&
+      typeof result.data.policy === "string"
+        ? result.data.policy.trim()
         : "";
 
-    if (!selected || selected === current || chain.includes(selected)) break;
+    if (!selected || selected === current || chain.indexOf(selected) !== -1) break;
     current = selected;
   }
 
@@ -139,21 +168,32 @@ async function resolvePolicy(name) {
 
 async function checkExit(policy) {
   const start = Date.now();
-  const res = await request({
+  const result = await request({
     url: `${CFG.ipApi}&_=${Date.now()}`,
     policy,
     timeout: CFG.requestTimeout,
-    headers: { Accept: "application/json", "Cache-Control": "no-cache" },
+    headers: {
+      Accept: "application/json",
+      "Cache-Control": "no-cache",
+    },
   });
 
-  if (!res.ok) {
-    return { ok: false, error: res.error, latency: Date.now() - start };
+  if (!result.ok) {
+    return {
+      ok: false,
+      error: result.error,
+      latency: Date.now() - start,
+    };
   }
 
-  const json = parseJSON(res.data);
+  const json = parseJSON(result.data);
   const ip = json && typeof json.ip === "string" ? json.ip.trim() : "";
   if (!ip) {
-    return { ok: false, error: "出口 IP 接口返回无效", latency: Date.now() - start };
+    return {
+      ok: false,
+      error: "出口 IP 接口返回无效",
+      latency: Date.now() - start,
+    };
   }
 
   return {
@@ -174,7 +214,11 @@ async function checkRemote(host, port) {
 
   const submitted = await probe(submitURL);
   if (!submitted.ok) {
-    return { known: false, reason: `远端服务不可用：${submitted.error}`, items: [] };
+    return {
+      known: false,
+      reason: `远端服务不可用：${submitted.error}`,
+      items: [],
+    };
   }
 
   const task = parseJSON(submitted.data);
@@ -244,18 +288,19 @@ function parseRemote(names, nodeMap, data) {
   let completed = 0;
   const items = [];
 
-  names.forEach((name) => {
+  names.forEach(function parseOne(name) {
     const meta = Array.isArray(nodeMap[name]) ? nodeMap[name] : [];
     const code = meta[0] || "";
     const raw = data[name];
     let status = "pending";
     let latency = null;
 
-    if (Array.isArray(raw) && raw[0]) {
+    if (Array.isArray(raw) && raw.length > 0) {
+      const first = Array.isArray(raw[0]) ? raw[0][0] : raw[0];
       completed += 1;
-      if (typeof raw[0].time === "number") {
+      if (first && typeof first.time === "number") {
         status = "success";
-        latency = raw[0].time * 1000;
+        latency = first.time * 1000;
         success += 1;
       } else {
         status = "failure";
@@ -274,43 +319,116 @@ function parseRemote(names, nodeMap, data) {
 function diagnose(node, direct, remote) {
   if (!direct.ok) {
     return {
-      title: "⚠️ 本机直连网络异常",
-      note: "先检查 Wi‑Fi/蜂窝、DNS 或其他 VPN，再重新检测。",
+      title: "本机网络异常",
+      note: "请先检查 Wi‑Fi、蜂窝网络、DNS 或其他 VPN。",
+      panelPrefix: "🟠",
+      icon: "wifi.exclamationmark",
+      color: "#FF9500",
     };
   }
 
   if (node.ok) {
     return {
-      title: "✅ 节点目前可以正常使用",
+      title: "节点目前可以正常使用",
       note: remote.known && !remote.ok ? "入口可能限制了探测机 IP。" : "",
+      panelPrefix: "🟢",
+      icon: "checkmark.shield.fill",
+      color: "#34C759",
     };
   }
 
   if (remote.known && remote.ok) {
     return {
-      title: "🛑 疑似本地运营商/GFW 阻断",
-      note: "密码、协议、TLS/SNI 或证书配置错误也可能出现相同结果。",
+      title: "疑似本地运营商/GFW 阻断",
+      note: "密码、协议、TLS/SNI 或证书错误也可能出现相同结果。",
+      panelPrefix: "🔴",
+      icon: "bolt.horizontal.icloud.fill",
+      color: "#FF3B30",
     };
   }
 
   if (remote.known && !remote.ok) {
     return {
-      title: "❌ 节点入口疑似离线或端口未开放",
-      note: "检查服务进程、防火墙、安全组和监听端口。",
+      title: "节点入口疑似离线或端口未开放",
+      note: "请检查服务进程、防火墙、安全组和监听端口。",
+      panelPrefix: "🔴",
+      icon: "xmark.icloud.fill",
+      color: "#FF3B30",
     };
   }
 
   return {
-    title: "❓ 节点不可用，但暂时无法区分原因",
-    note: "稍后重试，并核对节点参数。",
+    title: "节点不可用，暂时无法区分原因",
+    note: "请稍后重试并核对节点参数。",
+    panelPrefix: "⚪️",
+    icon: "questionmark.diamond.fill",
+    color: "#8E8E93",
   };
+}
+
+function buildReport(context) {
+  const chain = context.resolved.chain.join(" → ");
+  const panelLines = [];
+  const fullLines = [];
+
+  panelLines.push(`策略：${chain}`);
+  panelLines.push(
+    context.node.ok
+      ? `出口：${context.node.ip}${formatLocation(context.node)}`
+      : `出口：❌ ${short(context.node.error)}`
+  );
+  panelLines.push(
+    `节点：${context.node.ok ? "✅" : "❌"} ${formatMs(context.node.latency)}  ` +
+      `直连：${context.direct.ok ? "✅" : "❌"} ${formatMs(context.direct.latency)}`
+  );
+  panelLines.push(formatRemoteSummary(context.remote));
+  panelLines.push(`结论：${context.conclusion.title}`);
+  panelLines.push(`更新：${formatTime(new Date())}`);
+
+  fullLines.push(`策略：${chain}`);
+  if (context.protocol) fullLines.push(`协议：${context.protocol}`);
+  if (context.endpoint) {
+    fullLines.push(`入口：${hostPort(context.endpoint.host, context.endpoint.port)}`);
+  }
+  fullLines.push("");
+  fullLines.push(formatExit("节点代理", context.node));
+  fullLines.push(formatExit("本机直连", context.direct));
+  fullLines.push(formatRemoteSummary(context.remote));
+  if (context.remote.items && context.remote.items.length) {
+    fullLines.push(context.remote.items.map(formatRemoteItem).join("  "));
+  }
+  fullLines.push("");
+  fullLines.push(`结论：${context.conclusion.title}`);
+  if (context.conclusion.note) fullLines.push(`提示：${context.conclusion.note}`);
+
+  return {
+    panelContent: panelLines.join("\n"),
+    fullContent: fullLines.join("\n"),
+  };
+}
+
+function formatLocation(result) {
+  const values = [result.country, result.asn].filter(Boolean);
+  return values.length ? ` · ${values.join(" ")}` : "";
+}
+
+function formatRemoteSummary(remote) {
+  if (remote.known) {
+    return `远端 TCP：${remote.ok ? "✅ 可达" : "❌ 不可达"}（${
+      remote.success
+    }/${remote.total}）`;
+  }
+  return `远端 TCP：⚪ ${remote.reason || "未确认"}`;
 }
 
 function formatExit(label, result) {
   if (!result.ok) return `${label}：❌ 不可达（${short(result.error)}）`;
-  const detail = [result.ip, result.country, [result.asn, result.aso].filter(Boolean).join(" ")]
-    .filter(Boolean)
-    .concat(formatMs(result.latency));
+  const detail = [
+    result.ip,
+    result.country,
+    [result.asn, result.aso].filter(Boolean).join(" "),
+    formatMs(result.latency),
+  ].filter(Boolean);
   return `${label}：✅ 正常（${detail.join(" · ")}）`;
 }
 
@@ -328,29 +446,47 @@ function findEndpoint(root) {
     if (value == null || depth > 10) return null;
 
     if (typeof value === "object") {
-      if (seen.includes(value)) return null;
+      if (seen.indexOf(value) !== -1) return null;
       seen.push(value);
     }
 
     if (typeof value === "string") return parseEndpoint(value);
 
     if (Array.isArray(value)) {
-      for (const item of value) {
-        const result = walk(item, depth + 1);
-        if (result) return result;
+      for (let i = 0; i < value.length; i += 1) {
+        const found = walk(value[i], depth + 1);
+        if (found) return found;
       }
       return null;
     }
 
     if (typeof value === "object") {
       const keys = Object.keys(value);
-      const normalized = keys.map((key) => ({ key, norm: normKey(key), value: value[key] }));
-      const hostItem = normalized.find((item) =>
-        ["server", "serverhost", "serveraddress", "hostname", "host", "address", "remotehost", "proxyhost", "endpoint"].includes(item.norm)
-      );
-      const portItem = normalized.find((item) =>
-        ["port", "serverport", "remoteport", "proxyport", "endpointport"].includes(item.norm)
-      );
+      const normalized = keys.map(function mapKey(key) {
+        return { key, norm: normKey(key), value: value[key] };
+      });
+      const hostItem = normalized.find(function findHost(item) {
+        return [
+          "server",
+          "serverhost",
+          "serveraddress",
+          "hostname",
+          "host",
+          "address",
+          "remotehost",
+          "proxyhost",
+          "endpoint",
+        ].indexOf(item.norm) !== -1;
+      });
+      const portItem = normalized.find(function findPort(item) {
+        return [
+          "port",
+          "serverport",
+          "remoteport",
+          "proxyport",
+          "endpointport",
+        ].indexOf(item.norm) !== -1;
+      });
 
       if (hostItem && portItem) {
         const host = cleanHost(hostItem.value);
@@ -358,9 +494,9 @@ function findEndpoint(root) {
         if (host && port) return { host, port };
       }
 
-      for (const item of normalized) {
-        const result = walk(item.value, depth + 1);
-        if (result) return result;
+      for (let i = 0; i < normalized.length; i += 1) {
+        const found = walk(normalized[i].value, depth + 1);
+        if (found) return found;
       }
     }
 
@@ -388,17 +524,24 @@ function findProtocol(root) {
   function walk(value, depth) {
     if (value == null || depth > 8) return;
     if (typeof value === "object") {
-      if (seen.includes(value)) return;
+      if (seen.indexOf(value) !== -1) return;
       seen.push(value);
     }
 
-    if (Array.isArray(value)) return value.forEach((item) => walk(item, depth + 1));
+    if (Array.isArray(value)) {
+      value.forEach(function each(item) {
+        walk(item, depth + 1);
+      });
+      return;
+    }
     if (typeof value !== "object") return;
 
-    Object.keys(value).forEach((key) => {
+    Object.keys(value).forEach(function eachKey(key) {
       const item = value[key];
       if (
-        ["type", "protocol", "proxytype", "policytype", "transport"].includes(normKey(key)) &&
+        ["type", "protocol", "proxytype", "policytype", "transport"].indexOf(
+          normKey(key)
+        ) !== -1 &&
         typeof item === "string"
       ) {
         values.push(item.trim());
@@ -409,13 +552,15 @@ function findProtocol(root) {
 
   walk(root, 0);
   const known = /(hysteria|tuic|wireguard|snell|shadowsocks|trojan|vmess|vless|socks|https?|ssh|quic)/i;
-  return values.find((item) => known.test(item)) || values[0] || "";
+  return values.find(function findKnown(item) {
+    return known.test(item);
+  }) || values[0] || "";
 }
 
 function surgeAPI(method, path, body) {
-  return new Promise((resolve) => {
+  return new Promise(function executor(resolve) {
     try {
-      $httpAPI(method, path, body || {}, (result) => {
+      $httpAPI(method, path, body || {}, function callback(result) {
         if (result && result.error) {
           resolve({ ok: false, error: errorText(result.error), data: result });
         } else {
@@ -429,13 +574,17 @@ function surgeAPI(method, path, body) {
 }
 
 function request(options) {
-  return new Promise((resolve) => {
+  return new Promise(function executor(resolve) {
     try {
-      $httpClient.get(options, (error, response, data) => {
-        if (error) return resolve({ ok: false, error: errorText(error) });
+      $httpClient.get(options, function callback(error, response, data) {
+        if (error) {
+          resolve({ ok: false, error: errorText(error) });
+          return;
+        }
         const status = Number(response && response.status);
         if (Number.isFinite(status) && (status < 200 || status >= 300)) {
-          return resolve({ ok: false, error: `HTTP ${status}`, status, data });
+          resolve({ ok: false, error: `HTTP ${status}`, status, data });
+          return;
         }
         resolve({ ok: true, status, data });
       });
@@ -479,17 +628,25 @@ function cleanPort(value) {
 
 function hostPort(host, port) {
   const text = String(host || "").trim();
-  return `${text.includes(":") && !text.startsWith("[") ? `[${text}]` : text}:${port}`;
+  return `${text.indexOf(":") !== -1 && text.charAt(0) !== "[" ? `[${text}]` : text}:${port}`;
 }
 
 function normKey(value) {
-  return String(value || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+  return String(value || "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, "");
 }
 
 function formatMs(value) {
   const ms = Number(value);
   if (!Number.isFinite(ms)) return "--ms";
   return `${ms >= 100 ? ms.toFixed(0) : ms >= 10 ? ms.toFixed(1) : ms.toFixed(2)}ms`;
+}
+
+function formatTime(date) {
+  const hours = String(date.getHours()).padStart(2, "0");
+  const minutes = String(date.getMinutes()).padStart(2, "0");
+  return `${hours}:${minutes}`;
 }
 
 function short(value) {
@@ -512,18 +669,25 @@ function flag(code) {
   const value = String(code || "").toUpperCase();
   if (!/^[A-Z]{2}$/.test(value)) return "";
   try {
-    return String.fromCodePoint(...value.split("").map((char) => 127397 + char.charCodeAt(0)));
+    return String.fromCodePoint.apply(
+      null,
+      value.split("").map(function toPoint(char) {
+        return 127397 + char.charCodeAt(0);
+      })
+    );
   } catch (_) {
     return value;
   }
 }
 
 function sleep(ms) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
+  return new Promise(function executor(resolve) {
+    setTimeout(resolve, ms);
+  });
 }
 
-function done() {
+function finish(payload) {
   if (finished) return;
   finished = true;
-  $done();
+  $done(payload);
 }
