@@ -1,0 +1,6 @@
+#!name=节点阻断检测
+#!desc=检测策略组当前所选节点是否可用，并辅助判断节点离线、端口未开放或疑似本地运营商/GFW 阻断。
+#!arguments=GROUP=节点选择
+
+[Script]
+节点阻断检测 = type=generic,script-path=https://raw.githubusercontent.com/xytxg/test111/main/surge-node-block-check/surge_node_block_check.js,argument=%GROUP%,timeout=35,script-update-interval=86400
