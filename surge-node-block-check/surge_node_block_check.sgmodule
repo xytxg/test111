@@ -1,6 +1,9 @@
-#!name=节点阻断检测
-#!desc=检测策略组当前所选节点是否可用，并辅助判断节点离线、端口未开放或疑似本地运营商/GFW 阻断。
-#!arguments=GROUP=节点选择
+#!name=节点阻断检测面板
+#!desc=在 Surge 策略组页面直接显示当前节点可用性、出口 IP、延迟、远端 TCP 探测及阻断诊断结果。
+#!arguments=GROUP=Proxy
+
+[Panel]
+节点阻断检测 = title="节点阻断检测",content="点击右侧刷新按钮开始检测\n默认检测 Proxy 当前所选节点",icon=bolt.horizontal.icloud.fill,icon-color=#0A84FF,script-name=节点阻断检测脚本,update-interval=300
 
 [Script]
-节点阻断检测 = type=generic,script-path=https://raw.githubusercontent.com/xytxg/test111/main/surge-node-block-check/surge_node_block_check.js,argument=%GROUP%,timeout=35,script-update-interval=86400
+节点阻断检测脚本 = type=generic,script-path=https://raw.githubusercontent.com/xytxg/test111/main/surge-node-block-check/surge_node_block_check.js,argument=%GROUP%,timeout=35,script-update-interval=86400
