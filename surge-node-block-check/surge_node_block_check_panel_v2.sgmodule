@@ -1,9 +1,9 @@
 #!name=节点检测面板
-#!desc=手动检测 Proxy 当前节点、出口 IP、地区网络、延迟和可用状态；不启用自动刷新，可与 Script Hub 共存。
+#!desc=手动检测 Proxy 当前节点、出口 IP、地区网络、延迟和可用状态。仅点击刷新按钮时运行。
 #!system=ios
 
 [Panel]
 XYTXGNodeCheckPanel = title="节点检测",content="点击右侧刷新按钮检测 Proxy 当前节点",style=info,script-name=XYTXGNodeCheckScript
 
 [Script]
-XYTXGNodeCheckScript = type=generic,script-path=https://raw.githubusercontent.com/xytxg/test111/main/surge-node-block-check/surge_node_block_check_panel_v3.js,argument=Proxy,timeout=12,script-update-interval=86400
+XYTXGNodeCheckScript = type=generic,script-path=https://raw.githubusercontent.com/xytxg/test111/main/surge-node-block-check/surge_node_block_check_panel_v3.js,argument=Proxy,timeout=12
