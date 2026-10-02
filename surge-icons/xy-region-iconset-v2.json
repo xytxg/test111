@@ -1,0 +1,25 @@
+{
+  "name": "XY Region Flags v2",
+  "icons": [
+    {"name":"香港节点","url":"https://raw.githubusercontent.com/Rabbit-Spec/Surge/Master/Conf/icon/Country-Hong_Kong.png"},
+    {"name":"美国节点","url":"https://raw.githubusercontent.com/Rabbit-Spec/Surge/Master/Conf/icon/Country-United_States.png"},
+    {"name":"日本节点","url":"https://raw.githubusercontent.com/Rabbit-Spec/Surge/Master/Conf/icon/Country-Japan.png"},
+    {"name":"台湾节点","url":"https://raw.githubusercontent.com/xytxg/test111/main/surge-icons/regions-v2/Country-Taiwan.png"},
+    {"name":"韩国节点","url":"https://raw.githubusercontent.com/Rabbit-Spec/Surge/Master/Conf/icon/Country-South_Korea.png"},
+    {"name":"新加坡节点","url":"https://raw.githubusercontent.com/Rabbit-Spec/Surge/Master/Conf/icon/Country-Singapore.png"},
+    {"name":"英国节点","url":"https://raw.githubusercontent.com/Rabbit-Spec/Surge/Master/Conf/icon/Country-United_Kingdom.png"},
+    {"name":"德国节点","url":"https://raw.githubusercontent.com/xytxg/test111/main/surge-icons/regions-v2/Country-Germany.png"},
+    {"name":"荷兰节点","url":"https://raw.githubusercontent.com/xytxg/test111/main/surge-icons/regions-v2/Country-Netherlands.png"},
+    {"name":"加拿大节点","url":"https://raw.githubusercontent.com/xytxg/test111/main/surge-icons/regions-v2/Country-Canada.png"},
+    {"name":"澳大利亚节点","url":"https://raw.githubusercontent.com/xytxg/test111/main/surge-icons/regions-v2/Country-Australia.png"},
+    {"name":"印度节点","url":"https://raw.githubusercontent.com/xytxg/test111/main/surge-icons/regions-v2/Country-India.png"},
+    {"name":"越南节点","url":"https://raw.githubusercontent.com/xytxg/test111/main/surge-icons/regions-v2/Country-Vietnam.png"},
+    {"name":"泰国节点","url":"https://raw.githubusercontent.com/xytxg/test111/main/surge-icons/regions-v2/Country-Thailand.png"},
+    {"name":"马来西亚节点","url":"https://raw.githubusercontent.com/xytxg/test111/main/surge-icons/regions-v2/Country-Malaysia.png"},
+    {"name":"菲律宾节点","url":"https://raw.githubusercontent.com/xytxg/test111/main/surge-icons/regions-v2/Country-Philippines.png"},
+    {"name":"法国节点","url":"https://raw.githubusercontent.com/xytxg/test111/main/surge-icons/regions-v2/Country-France.png"},
+    {"name":"瑞士节点","url":"https://raw.githubusercontent.com/xytxg/test111/main/surge-icons/regions-v2/Country-Switzerland.png"},
+    {"name":"意大利节点","url":"https://raw.githubusercontent.com/xytxg/test111/main/surge-icons/regions-v2/Country-Italy.png"},
+    {"name":"西班牙节点","url":"https://raw.githubusercontent.com/xytxg/test111/main/surge-icons/regions-v2/Country-Spain.png"}
+  ]
+}
