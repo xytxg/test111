@@ -1,23 +1,28 @@
 #!name=喜马拉雅 Surge 兼容版
-#!desc=将原 Quantumult X/Loon 重写规则改为 Surge 原生语法，保留原脚本执行路径与响应处理逻辑
+#!desc=修复 Surge 下请求未命中、HTTPDNS/IP 直连 MITM 缺失及新版接口路径变化；保留原脚本响应处理逻辑
 #!category=工具
 
 [Script]
-喜马拉雅响应处理 = type=http-response,pattern=^https?:\/\/.+((ximalaya)|(xmcdn)).+(mobile-user\/v2\/homePage|product\/detail\/v1|v1\/album\/track\/ts|mobile-playpage\/track\/v4\/baseInfo\/ts|mobile-playpage\/playpage\/tabs\/v2|mobile-playpage\/playpage\/track\/qualityAndEffect|mobile\/download\/v2\/track|mobile-user-grade\/decoratorV2\/decorationDetails\/page|mobile-album\/album\/plant\/grass),requires-body=1,max-size=0,script-path=https://raw.githubusercontent.com/WeiGiegie/666/main/ximalaya.js
+# 原脚本本身包含 Surge 运行环境兼容。这里同时兼容 9.4.x 旧路径与 9.5.x 已出现的新路径。
+喜马拉雅响应处理 = type=http-response,pattern=^https?:\/\/(?:[^\/]+\.)?(?:ximalaya\.com|xmcdn\.com)\/.*(?:mobile-user\/v2\/homePage|product\/detail\/v1|v1\/album\/track\/ts|mobile\/v1\/album\/track|mobile-playpage\/track\/v4\/baseInfo(?:\/ts)?|mobile-playpage\/playpage\/tabs\/v2|mobile-playpage\/playpage\/track\/qualityAndEffect|mobile\/download\/v2\/track|mobile-user-grade\/decoratorV2\/decorationDetails\/page|mobile-album\/album\/plant\/grass),requires-body=true,max-size=-1,timeout=30,script-path=https://raw.githubusercontent.com/WeiGiegie/666/main/ximalaya.js
 
 [URL Rewrite]
+# 广告/统计请求：兼容 hera 新域名
 ^https?:\/\/passport\.ximalaya\.com\/friendship-mobile\/v1\/findFriendsBanner\/show\/ _ reject
-^https?:\/\/xdcs-collector\.ximalaya\.com\/api\/v1\/realtime _ reject
-^https?:\/\/adse\.wsa\.ximalaya\.com _ reject
-^https?:\/\/adse\.ximalaya\.com _ reject
-^https?:\/\/ad\.ximalaya\.com _ reject
+^https?:\/\/xdcs-collector(?:hera)?\.ximalaya\.com\/(?:api|nyx)\/v1\/ _ reject
+^https?:\/\/(?:adse\.wsa|adse|adsehera|adbehavior)\.ximalaya\.com(?:\/|$) _ reject
+^https?:\/\/ad\.ximalaya\.com(?:\/|$) _ reject
 ^https?:\/\/ulogs\.umeng\.com\/unify_logs _ reject
 ^https?:\/\/mobile\.ximalaya\.com\/business-sale-promotion-guide-mobile-web\/popup\/info\/ _ reject
 
 [Map Local]
-^https?:\/\/.+ximalaya\.com\/x-web-activity\/signIn\/getHomePageSignInInfo\/ data-type=text data="{}" status-code=200 header="Content-Type:application/json"
-^https?:\/\/.+ximalaya\.com\/product\/promotion\/v1\/album\/price data-type=text data="{}" status-code=200 header="Content-Type:application/json"
-^https:\/\/(m|mwsa)\.ximalaya\.com\/community\/square\/v\d\/stream\? data-type=base64 data="eyJkYXRhIjp7ImNhcmRzIjpbeyJjb250ZW50Ijp7fSwidHlwZSI6IlJFQ09NTUVORFMifV19LCJyZXQiOjB9" status-code=200 header="Content-Type:application/json"
+# 对应原 QX 的 reject-200
+^https?:\/\/[^\/]*ximalaya\.com\/x-web-activity\/signIn\/getHomePageSignInInfo\/ data-type=text data="{}" status-code=200 header="Content-Type:application/json"
+^https?:\/\/[^\/]*ximalaya\.com\/product\/promotion\/v1\/album\/price data-type=text data="{}" status-code=200 header="Content-Type:application/json"
+
+# Script Hub 转换失败的 Loon v2 response.body.mock：改为 Surge 原生 Map Local
+^https:\/\/(?:m|mwsa)\.ximalaya\.com\/community\/square\/v\d+\/stream\? data-type=base64 data="eyJkYXRhIjp7ImNhcmRzIjpbeyJjb250ZW50Ijp7fSwidHlwZSI6IlJFQ09NTUVORFMifV19LCJyZXQiOjB9" status-code=200 header="Content-Type:application/json"
 
 [MITM]
-hostname = %APPEND% *.ximalaya.com, *.xmcdn.com, passport.ximalaya.com, xdcs-collector.ximalaya.com, adse.wsa.ximalaya.com, adse.ximalaya.com, ad.ximalaya.com, mobile.ximalaya.com, mobwsa.ximalaya.com, ulogs.umeng.com
+# Ximalaya 大量使用 HTTPDNS/IP 直连。只写 *.ximalaya.com 会导致部分请求完全绕过 Surge 的 HTTP 脚本。
+hostname = %APPEND% *.ximalaya.com, *.xmcdn.com, apisg.himalaya.com, ulogs.umeng.com, 36.150.215.*, 61.172.194.*, 180.153.*.*, 180.153.255.*, 180.153.140.*, 180.153.250.*, 114.80.99.*, 114.80.139.2*, 61.162.174.*, 119.188.123.*, 59.83.227.*, 114.80.161.29, 1.62.62.64, 1.194.255.171, 23.236.99.89, 36.99.200.135, 42.81.4.198, 42.81.26.128, 42.81.120.58, 43.152.24.12, 43.152.24.18, 43.152.25.127, 43.152.29.38, 43.175.16.34, 43.175.22.25, 43.175.44.15, 49.7.69.197, 49.51.224.95, 101.33.11.32, 101.33.11.106, 101.33.20.34, 101.33.29.110, 103.105.60.99, 140.249.84.135, 140.249.85.189, 150.109.90.80, 150.109.91.35, 150.138.47.94, 150.138.136.145, 203.205.13*.*, 203.205.250.*, 211.152.137.*, 47.100.227.85, 61.164.145.12, 106.41.204.126, 118.25.119.177, 223.111.231.198, 120.22*.2*.*, 43.132.8*.*, 101.33.27.*, 43.141.11.*, 117.34.49.212, 36.103.197.65, 101.91.13*, 36.42.77.*, 118.180.43.252, 49.119.120.*, 58.144.235.61, 58.251.62*, 221.204.4*.*, 112.84.131.*, 112.80.180.72, 112.98.170.228, 112.99.146.108, 116.136.188.184, 116.162.203.111, 116.177.225.247, 123.138.8.*, 183.204.35.*, 183.201.114.*, 101.91.135.*, 101.91.133.*, 101.91.134.*, 61.170.88.*, 42.56.64.*, 101.89.53.*, 36.131.221.*, 111.42.194.*, 111.6.56.*, 120.232.165.228, 43.159.71.*, 43.132.81.*, 61.172.1*.*, 43.132.80.77, 43.132.83.175, 43.132.84.11, 203.205.136.87, 203.205.136.100, 203.205.136.102, 203.205.136.159, 203.205.137.27, 203.205.137.87, 203.205.137.241, 203.205.250.111, 203.205.250.113, 116.153.*.*, 39.156.8.*, 183.204.64.*, 61.241.178.*, 112.64.213.*, 43.174.54.*, 27.152.187.*, 117.161.*.*, 182.242.50.*, 123.12.235.*, 85.211.193.*, 111.12.187.*, 117.161.169.*, 59.37.143.*, 42.202.164.*, 219.144.82.*, 152.67.253.*, 42.200.166.*, 163.177.58.*, 120.240.179.*, 36.170.27.*, 74.226.216.*
