@@ -1,0 +1,18 @@
+#!name=喜马拉雅去广告 Surge
+#!desc=Surge 原生兼容版，修复 Script Hub 对 Loon v2 response.body.mock 的转换报错；仅包含广告/推荐清理规则
+#!category=去广告
+
+[URL Rewrite]
+^https?:\/\/passport\.ximalaya\.com\/friendship-mobile\/v1\/findFriendsBanner\/show\/ _ reject
+^https?:\/\/xdcs-collector\.ximalaya\.com\/api\/v1\/realtime _ reject
+^https?:\/\/adse\.wsa\.ximalaya\.com _ reject
+^https?:\/\/adse\.ximalaya\.com _ reject
+^https?:\/\/ad\.ximalaya\.com _ reject
+^https?:\/\/ulogs\.umeng\.com\/unify_logs _ reject
+^https?:\/\/mobile\.ximalaya\.com\/business-sale-promotion-guide-mobile-web\/popup\/info\/ _ reject
+
+[Map Local]
+^https:\/\/(m|mwsa)\.ximalaya\.com\/community\/square\/v\d\/stream\? data-type=base64 data="eyJkYXRhIjp7ImNhcmRzIjpbeyJjb250ZW50Ijp7fSwidHlwZSI6IlJFQ09NTUVORFMifV19LCJyZXQiOjB9" status-code=200 header="Content-Type:application/json"
+
+[MITM]
+hostname = %APPEND% *.ximalaya.com, ulogs.umeng.com
