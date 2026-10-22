@@ -1,0 +1,14 @@
+# X / Twitter - minimal, domain-only Surge rule set
+# Audited: 2026-10-22
+# No Grok/xAI, third-party tools, IP blocks, scripts, or rewrites.
+DOMAIN-SUFFIX,x.com
+DOMAIN-SUFFIX,twitter.com
+DOMAIN-SUFFIX,t.co
+DOMAIN-SUFFIX,twimg.com
+DOMAIN-SUFFIX,twimg.co
+DOMAIN-SUFFIX,twimg.org
+DOMAIN-SUFFIX,twtrdns.net
+DOMAIN-SUFFIX,twttr.com
+DOMAIN-SUFFIX,twttr.net
+DOMAIN-SUFFIX,twitteroauth.com
+DOMAIN-SUFFIX,tweetdeck.com
