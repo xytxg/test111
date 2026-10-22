@@ -1,0 +1,41 @@
+# Paste under your EXISTING [Rule] section, BEFORE GEOIP / FINAL.
+# Example uses policy named Proxy; replace it with your actual Surge policy.
+# --- X / Twitter ---
+DOMAIN-SUFFIX,x.com,Proxy
+DOMAIN-SUFFIX,twitter.com,Proxy
+DOMAIN-SUFFIX,t.co,Proxy
+DOMAIN-SUFFIX,twimg.com,Proxy
+DOMAIN-SUFFIX,twimg.co,Proxy
+DOMAIN-SUFFIX,twimg.org,Proxy
+DOMAIN-SUFFIX,twtrdns.net,Proxy
+DOMAIN-SUFFIX,twttr.com,Proxy
+DOMAIN-SUFFIX,twttr.net,Proxy
+DOMAIN-SUFFIX,twitteroauth.com,Proxy
+DOMAIN-SUFFIX,tweetdeck.com,Proxy
+
+# --- Meta ---
+DOMAIN-SUFFIX,meta.com,Proxy
+DOMAIN-SUFFIX,meta.ai,Proxy
+DOMAIN-SUFFIX,facebook.com,Proxy
+DOMAIN-SUFFIX,facebook.net,Proxy
+DOMAIN-SUFFIX,fb.com,Proxy
+DOMAIN-SUFFIX,fb.me,Proxy
+DOMAIN-SUFFIX,fb.watch,Proxy
+DOMAIN-SUFFIX,fbcdn.com,Proxy
+DOMAIN-SUFFIX,fbcdn.net,Proxy
+DOMAIN-SUFFIX,fbsbx.com,Proxy
+DOMAIN-SUFFIX,fbsbx.net,Proxy
+DOMAIN-SUFFIX,instagram.com,Proxy
+DOMAIN-SUFFIX,instagr.am,Proxy
+DOMAIN-SUFFIX,cdninstagram.com,Proxy
+DOMAIN-SUFFIX,ig.me,Proxy
+DOMAIN-SUFFIX,igcdn.com,Proxy
+DOMAIN-SUFFIX,threads.com,Proxy
+DOMAIN-SUFFIX,threads.net,Proxy
+DOMAIN-SUFFIX,whatsapp.com,Proxy
+DOMAIN-SUFFIX,whatsapp.net,Proxy
+DOMAIN-SUFFIX,whatsapp.biz,Proxy
+DOMAIN-SUFFIX,wa.me,Proxy
+DOMAIN-SUFFIX,messenger.com,Proxy
+DOMAIN-SUFFIX,fbmessenger.com,Proxy
+DOMAIN-SUFFIX,m.me,Proxy
