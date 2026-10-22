@@ -1,0 +1,6 @@
+# Paste under your existing [Rule] section, above GEOIP and FINAL.
+# Your Surge config must already define a policy/group named Proxy.
+RULE-SET,https://raw.githubusercontent.com/xytxg/test111/main/surge-x-meta/X.list,Proxy,update-interval=86400
+RULE-SET,https://raw.githubusercontent.com/xytxg/test111/main/surge-x-meta/Meta.list,Proxy,update-interval=86400
+# Optional: replace Meta.list with Meta-WithIP.list for traffic matching Meta ASN 32934.
+# For separate policy groups, replace Proxy with your exact X / Meta group names.
