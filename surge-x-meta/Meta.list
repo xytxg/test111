@@ -1,0 +1,34 @@
+# Meta social apps - minimal, domain-only Surge rule set
+# Facebook / Instagram / Threads / WhatsApp / Messenger / Meta AI
+# Audited: 2026-10-22
+# No third-party phishing/typosquat domains, broad clouds, scripts, or rewrites.
+# Shared Meta, Facebook and media services
+DOMAIN-SUFFIX,meta.com
+DOMAIN-SUFFIX,meta.ai
+DOMAIN-SUFFIX,facebook.com
+DOMAIN-SUFFIX,facebook.net
+DOMAIN-SUFFIX,fb.com
+DOMAIN-SUFFIX,fb.me
+DOMAIN-SUFFIX,fb.watch
+DOMAIN-SUFFIX,fbcdn.com
+DOMAIN-SUFFIX,fbcdn.net
+DOMAIN-SUFFIX,fbsbx.com
+DOMAIN-SUFFIX,fbsbx.net
+# Instagram
+DOMAIN-SUFFIX,instagram.com
+DOMAIN-SUFFIX,instagr.am
+DOMAIN-SUFFIX,cdninstagram.com
+DOMAIN-SUFFIX,ig.me
+DOMAIN-SUFFIX,igcdn.com
+# Threads
+DOMAIN-SUFFIX,threads.com
+DOMAIN-SUFFIX,threads.net
+# WhatsApp
+DOMAIN-SUFFIX,whatsapp.com
+DOMAIN-SUFFIX,whatsapp.net
+DOMAIN-SUFFIX,whatsapp.biz
+DOMAIN-SUFFIX,wa.me
+# Messenger
+DOMAIN-SUFFIX,messenger.com
+DOMAIN-SUFFIX,fbmessenger.com
+DOMAIN-SUFFIX,m.me
